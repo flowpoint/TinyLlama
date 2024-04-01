@@ -31,7 +31,7 @@ from transformers import (
     LlamaTokenizer
 
 )
-from datasets import load_dataset, Dataset
+from datasets import load_dataset, Dataset, load_from_disk
 import evaluate
 
 
@@ -128,6 +128,7 @@ class TrainingArguments(transformers.Seq2SeqTrainingArguments):
     save_strategy: str = field(default='steps', metadata={"help": 'When to save checkpoints'})
     save_steps: int = field(default=250, metadata={"help": 'How often to save a model'})
     save_total_limit: int = field(default=40, metadata={"help": 'How many checkpoints to save before the oldest is overwritten'})
+    bf16: bool = True
 
 @dataclass
 class GenerationArguments:
@@ -183,7 +184,8 @@ def get_accelerate_model(args, checkpoint_dir):
         args.model_name_or_path,
         device_map=device_map,
         trust_remote_code=args.trust_remote_code,
-    )
+
+    ).to(torch.bfloat16)
 
 
 
@@ -388,6 +390,8 @@ def make_data_module(tokenizer: transformers.PreTrainedTokenizer, args) -> Dict:
             return load_dataset("akoksal/LongForm")
         elif dataset_name == 'oasst1':
             return load_dataset("timdettmers/openassistant-guanaco")
+        elif dataset_name == 'oasst2':
+            return load_from_disk("../../oasst2_top1_en")
         elif dataset_name == "OpenAssistant/oasst_top1_2023-08-25":
             return load_dataset("OpenAssistant/oasst_top1_2023-08-25")
         elif dataset_name == 'vicuna':
